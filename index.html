@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>loop73</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --accent: #7b5ea7;
+    --accent-light: #a07dd4;
+    --accent-glow: rgba(123, 94, 167, 0.4);
+    --text: #f0edf7;
+    --text-muted: #7a7490;
+    --tap-active: #c4a8f0;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  .app-name {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .count-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .count {
+    font-size: clamp(6rem, 28vw, 11rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    transition: transform 0.07s ease, color 0.07s ease;
+    will-change: transform;
+  }
+
+  .count.bump {
+    transform: scale(1.08);
+    color: var(--tap-active);
+  }
+
+  .label {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .tap-btn {
+    width: clamp(180px, 52vw, 260px);
+    height: clamp(180px, 52vw, 260px);
+    border-radius: 50%;
+    border: none;
+    background: radial-gradient(circle at 38% 36%, #9b78cc, var(--accent) 60%, #3d2a6a);
+    box-shadow:
+      0 0 0 0 var(--accent-glow),
+      0 12px 40px rgba(0,0,0,0.5),
+      inset 0 2px 6px rgba(255,255,255,0.12);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.08s ease,
+      box-shadow 0.08s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .tap-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .tap-btn:active,
+  .tap-btn.pressed {
+    transform: scale(0.93);
+    box-shadow:
+      0 0 0 18px rgba(123, 94, 167, 0.12),
+      0 4px 18px rgba(0,0,0,0.5),
+      inset 0 2px 6px rgba(255,255,255,0.08);
+  }
+
+  .tap-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1.5px solid #2e2b3a;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .reset-btn:hover,
+  .reset-btn:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent-light);
+    background: rgba(123, 94, 167, 0.08);
+  }
+
+  .reset-btn:active {
+    background: rgba(123, 94, 167, 0.16);
+  }
+
+  /* ripple */
+  .ripple {
+    position: fixed;
+    border-radius: 50%;
+    background: rgba(160, 125, 212, 0.18);
+    transform: scale(0);
+    animation: ripple-anim 0.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes ripple-anim {
+    to {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-name">loop73</div>
+
+<div class="container">
+  <div class="count-wrap">
+    <div class="count" id="count">0</div>
+    <div class="label">taps</div>
+  </div>
+
+  <button class="tap-btn" id="tapBtn" aria-label="Tap">
+    <span class="tap-icon">👆</span>
+  </button>
+
+  <button class="reset-btn" id="resetBtn">Remise à zéro</button>
+</div>
+
+<script>
+  (function () {
+    let count = 0;
+    const countEl = document.getElementById('count');
+    const tapBtn  = document.getElementById('tapBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function updateCount() {
+      countEl.textContent = count;
+    }
+
+    function bumpAnim() {
+      countEl.classList.remove('bump');
+      void countEl.offsetWidth; // reflow
+      countEl.classList.add('bump');
+      clearTimeout(countEl._bumpTimer);
+      countEl._bumpTimer = setTimeout(() => countEl.classList.remove('bump'), 140);
+    }
+
+    function spawnRipple(x, y) {
+      const size = Math.max(window.innerWidth, window.innerHeight) * 1.6;
+      const el = document.createElement('div');
+      el.className = 'ripple';
+      el.style.cssText = `
+        width: ${size}px;
+        height: ${size}px;
+        left: ${x - size / 2}px;
+        top: ${y - size / 2}px;
+      `;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+
+    tapBtn.addEventListener('pointerdown', function (e) {
+      this.classList.add('pressed');
+    });
+
+    tapBtn.addEventListener('pointerup', function (e) {
+      this.classList.remove('pressed');
+    });
+
+    tapBtn.addEventListener('pointerleave', function () {
+      this.classList.remove('pressed');
+    });
+
+    tapBtn.addEventListener('click', function (e) {
+      count++;
+      updateCount();
+      bumpAnim();
+      spawnRipple(e.clientX, e.clientY);
+    });
+
+    // keyboard support
+    tapBtn.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        count++;
+        updateCount();
+        bumpAnim();
+        const r = tapBtn.getBoundingClientRect();
+        spawnRipple(r.left + r.width / 2, r.top + r.height / 2);
+      }
+    });
+
+    resetBtn.addEventListener('click', function () {
+      count = 0;
+      updateCount();
+    });
+
+    // spacebar anywhere
+    document.addEventListener('keydown', function (e) {
+      if (e.target === resetBtn) return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        tapBtn.click();
+      }
+    });
+  })();
+</script>
+</body>
+</html>
